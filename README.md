@@ -9,8 +9,8 @@ Contents:
 1. playbook.yml file
 2. Apps folder which contains a sample war.
 3. Template folder which contains configuration files for:
-     i. Set Tomcat8 as default service
-    ii. VirtualHost file
+     1. Set Tomcat8 as default service
+     2. VirtualHost file
 
 
 These playbook deploys a very basic implementation of Tomcat8 Application server and Apache web server. To use them, first edit the "hosts" inventory file to contain the hostnames of the machines on which you want Tocmat and web server to be deployed.
