@@ -1,0 +1,106 @@
+---
+- hosts: web
+
+  handlers:
+  - name: restart tomcat
+    service: name=tomcat state=restarted enabled=yes 
+  - name: daemon-reload
+    command: >
+      systemctl daemon-reload
+  - name: restart apache
+    service: name=apache2 state=restarted
+
+  tasks:
+  - name: Install java 8 preresequesits
+    apt: name=python-software-properties
+
+  - name: Add Java 8 repository
+    apt_repository: repo='ppa:webupd8team/java'
+
+  - name: Agree to oracle license
+    debconf: name=oracle-java8-installer question=shared/accepted-oracle-license-v1-1 vtype=select value=true
+ 
+  - name: Install Java 8
+    apt: name=oracle-java8-installer force=yes  
+
+  - name: Create tomcat group
+    group:
+     name: tomcat
+     system: true
+
+  - name: Create tomcat user
+    user:
+     name: tomcat
+     group: tomcat
+     shell: /bin/false
+     home: "/opt/tomcat"
+     system: true
+     createhome: true
+
+  - name: Download and extract Tomcat to tomcat home directory
+    unarchive:
+     src: http://redrockdigimark.com/apachemirror/tomcat/tomcat-8/v8.5.28/bin/apache-tomcat-8.5.28.tar.gz 
+     dest: "/opt/tomcat"
+     remote_src: true
+     group: tomcat
+     creates: "/opt/tomcat/apache-tomcat-8.5.28"
+
+  - name: Make the tomcat user the owner of the webapps, work, temp, and logs directories
+    file:
+     path: "/opt/tomcat/apache-tomcat-8.5.28/{{item}}"
+     owner: tomcat
+     group: tomcat
+     recurse: true
+    with_items:
+     - webapps
+     - work
+     - temp
+     - logs
+
+  - name: Grant Tomcat group read access to the conf directory
+    file:
+     path: "/opt/tomcat/apache-tomcat-8.5.28/conf"
+     state: directory
+     mode: "g+r+x"
+     recurse: true       
+ 
+  - name: Create systemd service script for Tomcat
+    template:
+     src: "templates/tomcat.service"
+     dest: "/etc/systemd/system/tomcat.service"
+     mode: 777
+    notify: 
+       - daemon-reload
+ 
+  - name: Start and enable Tomcat service
+    systemd:
+     name: tomcat
+     state: started
+     enabled: true
+     daemon_reload: true
+
+  - name: Copy War to tomcat server
+    copy: 
+     src: apps/sample.war
+     dest: /opt/tomcat/apache-tomcat-8.5.28/webapps/
+      
+  - name: Install apache web server
+    apt: name=apache2 state=latest
+
+  - name: Enable proxy module
+    apache2_module: name=proxy state=present
+    
+  - name: Enabled proxy ajp module
+    apache2_module: name=proxy_ajp state=present
+   
+  - name: copy virtual host file to apache2
+    copy:
+     src: templates/tomcat.conf
+     dest: /etc/apache2/sites-available/tomcat.conf
+   
+  - name: Enable vhost configuration
+    command: a2ensite tomcat.conf 
+    notify:
+      - restart apache
+      - restart tomcat
+

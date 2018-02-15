@@ -1,0 +1,13 @@
+[Unit]
+Description=Openspecimen Biobanking Software
+After=syslog.target network.target
+
+[Service]
+Type=forking
+
+ExecStart=/opt/tomcat/apache-tomcat-8.5.28/bin/startup.sh
+ExecStop=/bin/kill -15 $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+                                 
