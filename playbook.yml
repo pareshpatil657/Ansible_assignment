@@ -12,7 +12,7 @@
 
   tasks:
   - name: Install java 8 preresequesits
-    apt: name=python-software-properties
+    apt: name=software-properties-common
 
   - name: Add Java 8 repository
     apt_repository: repo='ppa:webupd8team/java'
